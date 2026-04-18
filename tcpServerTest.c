@@ -58,10 +58,12 @@ int main(){
         }
 
         printf("Client message content: %s\n",buffer);
-
+        
         n = write(newsockfd, "Server response: message received",34);
 
         if (n < 0) error("ERROR writing to socket");
+
+        bzero(buffer,256);
     }
 
     close(newsockfd);
