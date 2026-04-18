@@ -6,6 +6,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 void error(char *msg){
     perror(msg);
@@ -48,15 +49,25 @@ int main(){
 
     bzero(buffer,256);
 
-    n = read(newsockfd,buffer,255);
+    while(true){
+        n = read(newsockfd,buffer,255);
 
-    if (n < 0) error("ERROR reading from socket");
+        if (n < 0) {
+            error("ERROR reading from socket");
+            break;
+        }
 
-    printf("Here is the message: %s\n",buffer);
+        printf("Client message content: %s\n",buffer);
 
-    n = write(newsockfd,"I got your message",18);
+        n = write(newsockfd, "Server response: message received",34);
 
-    if (n < 0) error("ERROR writing to socket");
+        if (n < 0) error("ERROR writing to socket");
+    }
+
+    close(newsockfd);
+
+    shutdown(sockfd, SHUT_RDWR);
+
     return 0; 
 }
 
