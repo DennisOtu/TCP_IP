@@ -16,7 +16,6 @@ void error(char *err_msg){
 }
 
 void *connection_handler(void *sock_desc) {
-
     int sock = *(int*)sock_desc;
     int ret;
     char cli_msg[2000];
