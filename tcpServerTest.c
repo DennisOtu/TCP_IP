@@ -7,17 +7,46 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <pthread.h>
+#include <string.h>
 
-void error(char *msg){
-    perror(msg);
+void error(char *err_msg){
+    perror(err_msg);
     exit(1);
 }
 
+void *connection_handler(void *sock_desc) {
+
+    int sock = *(int*)sock_desc;
+    int ret;
+    char cli_msg[2000];
+
+    bzero(cli_msg,2000);
+
+    while((ret = read(sock,cli_msg,2000)) > 0){
+        printf("Client message content: %s\n",cli_msg);
+
+        ret = write(sock, "Server response: message received",34);
+
+        if (ret < 0) error("ERROR writing to socket");
+        
+        bzero(cli_msg,2000);             
+    }
+
+    if (ret < 0) {
+        puts("Client Disconnected: Server Closed");
+        exit(1);
+    }; 
+
+    close(sock);
+
+    return 0;
+}
+
+
 int main(){
-    int sockfd, newsockfd, portno, clilen;
-    char buffer[256];
+    int sockfd, cli_sockfd, portno, cli_len;
     struct sockaddr_in serv_addr, cli_addr;
-    int n;
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -38,39 +67,33 @@ int main(){
 
     listen(sockfd,5);
 
-    printf("Server started: Listening.... \n");
+    printf("Server Started: Listening.... \n");
 
-    clilen = sizeof(cli_addr);
+    cli_len = sizeof(cli_addr);
 
-    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+    cli_sockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &cli_len);
 
-    if (newsockfd < 0) 
+    if (cli_sockfd < 0) 
         error("ERROR on accept");
+        
+    puts("Client Connected");
 
-    bzero(buffer,256);
+    while(true) {
+        pthread_t thread_id;
+        int *thread_sockfd = malloc(1);
+        *thread_sockfd = cli_sockfd;
 
-    while(true){
-        n = read(newsockfd,buffer,255);
-
-        if (n < 0) {
-            error("ERROR reading from socket");
-            break;
+        if (pthread_create(&thread_id, NULL, connection_handler, (void*)thread_sockfd) < 0) {
+            perror("could not create thread");
+            return 1;
         }
 
-        printf("Client message content: %s\n",buffer);
-        
-        n = write(newsockfd, "Server response: message received",34);
-
-        if (n < 0) error("ERROR writing to socket");
-
-        bzero(buffer,256);
     }
-
-    close(newsockfd);
 
     shutdown(sockfd, SHUT_RDWR);
 
     return 0; 
 }
+
 
  

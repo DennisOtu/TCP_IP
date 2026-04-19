@@ -9,17 +9,17 @@
 #include <string.h>
 #include <stdbool.h>
 
-void error(char *msg){
-    perror(msg);
+void error(char *err_msg){
+    perror(err_msg);
     exit(0);
 }
 
 int main(){
-    int sockfd, portno, n;
+    int sockfd, portno, ret;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
-    char buffer[256];
+    char msg_buf[2000];
 
     portno = htons(2000);
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -47,37 +47,38 @@ int main(){
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
         error("ERROR connecting");
 
-    printf("Enter message: ");
+    printf("Enter message (type 'exit' to close): ");
 
-    bzero(buffer,256);
+    bzero(msg_buf,2000);
 
     while (true) {
-        fgets(buffer,255,stdin);
+        fgets(msg_buf,2000,stdin);
 
-        // Remove new line character if present
-        buffer[strcspn(buffer, "\n")] = '\0';
+            // Remove new line character if present
+        msg_buf[strcspn(msg_buf, "\n")] = '\0';
 
-        if (strcmp(buffer, "exit") == 0) {
+        if (strcmp(msg_buf, "exit") == 0) {
             break;
         }
 
-        n = write(sockfd,buffer,strlen(buffer));
+        ret = write(sockfd,msg_buf,strlen(msg_buf));
 
-        if (n < 0) 
+        if (ret < 0) 
             error("ERROR writing to socket");
 
-        bzero(buffer,256);
+        bzero(msg_buf,2000);
 
-        n = read(sockfd,buffer,255);
+        ret = read(sockfd,msg_buf,2000);
 
-        if (n < 0) 
+        if (ret < 0) 
             error("ERROR reading from socket");
 
-        printf("%s\n",buffer); 
+        printf("%s\n",msg_buf);
     }
     
     close(sockfd);
 
     return 0;
 }
+
 
